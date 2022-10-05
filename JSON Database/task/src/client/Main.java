@@ -9,6 +9,8 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class Main {
     private static ClientArgs jArgs;
@@ -32,7 +34,7 @@ public class Main {
         ) {
             System.out.println("Client started!");
 
-            String argsJson = new Gson().toJson(jArgs);//serialize the class
+            String argsJson = getInput();
             output.writeUTF(argsJson); // sending message to the server
             String receivedMsg = input.readUTF(); // response message
 
@@ -41,6 +43,24 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private static String getInput() {
+        String textToRead = null;
+        if (jArgs.getInput() == null) {
+            textToRead = new Gson().toJson(jArgs);
+        } else {
+            String path = System.getProperty("user.dir") + "/src/client/data/" + jArgs.getInput();
+//            String path = System.getProperty("user.dir") + "/JSON Database/task/src/client/data/" + jArgs.getInput();
+            try {
+                textToRead = Files.readString(Paths.get(path));
+            } catch (IOException ex) {
+                System.out.printf("save exception occurred %s", ex.getMessage());
+            }
+        }
+
+
+        return textToRead;
     }
 }
 //use "src/client/data/" as a client data path, and "./src/server/data/" as a sd path.
