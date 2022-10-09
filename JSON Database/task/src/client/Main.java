@@ -63,4 +63,3 @@ public class Main {
         return textToRead;
     }
 }
-//use "src/client/data/" as a client data path, and "./src/server/data/" as a sd path.

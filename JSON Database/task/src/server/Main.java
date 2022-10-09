@@ -1,7 +1,8 @@
 package server;
 
-import client.ClientArgs;
 import com.google.gson.Gson;
+import server.json.JsonDatabase;
+import server.json.Request;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -17,11 +18,12 @@ import java.util.concurrent.Executors;
 public class Main {
     private static final String SERVER_ADDRESS = "127.0.0.1";
     private static final int PORT = 34522;
-    private static final Database database = new Database();
+    private static JsonDatabase database;
     private static final ExecutorService executor = Executors.newSingleThreadExecutor();
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
+        database = new JsonDatabase();
         System.out.println("Server started!");
         while (true) {
             try (ServerSocket server = new ServerSocket(PORT, 50, InetAddress.getByName(SERVER_ADDRESS))) {
@@ -30,25 +32,17 @@ public class Main {
                 DataOutputStream output = new DataOutputStream(socket.getOutputStream());
 
                 String msg = input.readUTF();
-                ClientArgs clientArgs = new Gson().fromJson(msg, ClientArgs.class);//deserialize the message
-                if (clientArgs.getType().equals("exit")) {
+                Request request = new Gson().fromJson(msg, Request.class);
+                String type = request.getType();
+                if (type.equals("exit")) {
                     output.writeUTF(new Gson().toJson(Map.of("response", "OK")));
                     System.exit(0);
                     executor.shutdown();
-
                 }
-
                 executor.submit(() -> {
                     try {
-                        String reply = "";
-
-                        switch (clientArgs.getType()) {
-                            case "set" -> reply = database.setValue(clientArgs.getKey(), clientArgs.getValue());
-                            case "get" -> reply = database.getValue(clientArgs.getKey());
-                            case "delete" -> reply = database.deleteValue(clientArgs.getKey());
-
-                        }
-                        output.writeUTF(reply);
+                        String resultFromDb = database.executeJson(msg);
+                        output.writeUTF(resultFromDb);
 
                     } catch (Exception e) {
                         e.printStackTrace();
